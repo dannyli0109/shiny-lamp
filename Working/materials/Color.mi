@@ -1,0 +1,8 @@
+Material Instance: Color
+UUID: 6ecdfd2f-3e51-44e6-b4c5-bccf3519977e
+Material: 2f3074ef-c6fa-4d7f-82c3-3a1197be62bb
+Modifiable: true
+Attributes:
+  - Name: u_color
+    Type: Color
+    Value: [1, 0, 0]

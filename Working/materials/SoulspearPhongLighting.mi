@@ -1,0 +1,20 @@
+Material Instance: SoulspearPhongLighting
+UUID: 0a63709e-7443-4ae1-ae9e-ce3e75491d4f
+Material: da4ba434-dfc6-4249-bb4d-706595ea2b83
+Modifiable: true
+Attributes:
+  - Name: u_tint
+    Type: Color
+    Value: [1, 1, 1]
+  - Name: u_diffuseTexture
+    Type: Texture
+    Value: 8e8ac5d2-fc02-4344-a930-689d8216a076
+  - Name: u_hasNormal
+    Type: Bool
+    Value: 1
+  - Name: u_normalTexture
+    Type: Texture
+    Value: e5de0ec7-0c3c-4b22-b946-bd0096172426
+  - Name: u_specularTexture
+    Type: Texture
+    Value: d883f6ee-4304-4233-a38b-f67724c385f9

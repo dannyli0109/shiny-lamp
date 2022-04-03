@@ -1,0 +1,7 @@
+Material: Color
+UUID: 2f3074ef-c6fa-4d7f-82c3-3a1197be62bb
+Shader: 48549937-af10-4ced-a0ea-4859940583a1
+Attributes:
+  - Name: u_color
+    Type: Color
+    Value: [1, 1, 1]

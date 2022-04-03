@@ -1,0 +1,42 @@
+Scene: UntitledScene
+Entities:
+  - Entity: 03af8c06-5228-4499-b1e4-453cf1d7812e
+    Tag:
+      Name: Color
+    Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Children: [03b068ab-1e1c-444d-bf8a-37a149fe75e1]
+  - Entity: 03b068ab-1e1c-444d-bf8a-37a149fe75e1
+    Tag:
+      Name: Test
+    Transform:
+      Translation: [-1.5, -3.29999995, -0.400000006]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Parent: 03af8c06-5228-4499-b1e4-453cf1d7812e
+      Children: []
+    MeshRenderer:
+      Geometries: [0]
+      Materials: [1]
+  - Entity: ae25f02c-f0fb-4bf5-9ca5-80dede334c79
+    Tag:
+      Name: Phong
+    Transform:
+      Translation: [-1.70000005, -3.0999999, 1.39999998]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Children: [b1818696-ec14-415c-9d59-a82217ed35c5]
+  - Entity: b1818696-ec14-415c-9d59-a82217ed35c5
+    Tag:
+      Name: Entity
+    Transform:
+      Translation: [0.200000003, -0.100000001, -1.70000005]
+      Rotation: [0, 9.60000038, 0]
+      Scale: [1, 1, 1]
+      Parent: ae25f02c-f0fb-4bf5-9ca5-80dede334c79
+      Children: []
+    MeshRenderer:
+      Geometries: [0]
+      Materials: [0]
