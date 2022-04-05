@@ -5,9 +5,9 @@
 #include <memory>
 #include "../Model.h"
 #include "UUID.h"
-#include "SceneSerialiser.h"
+//#include "Serialiser.h"
 #include "OpenGLRenderer.h"
-
+#include "ResourceManager.h";
 class Scene;
 
 class Entity

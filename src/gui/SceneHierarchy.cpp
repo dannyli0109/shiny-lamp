@@ -6,14 +6,18 @@ void SceneHierarchy::Update(float deltaTime, std::shared_ptr<Scene> scene)
 
 	if (scene)
 	{
-		for (auto [uuid, entity] : scene->entities)
+		for (auto entity : scene->entities)
 		{
-			TransformComponent* transform = entity->GetComponent<TransformComponent>();
-			if (transform->parent.expired())
+			if (entity)
 			{
-				DrawNode(entity, scene);
+				TransformComponent* transform = entity->GetComponent<TransformComponent>();
+				if (transform->parent.expired())
+				{
+					DrawNode(entity, scene);
+				}
 			}
 		}
+		DrawAddEntity(scene);
 	}
 	ImGui::End();
 }
@@ -23,6 +27,7 @@ void SceneHierarchy::DrawNode(std::shared_ptr<Entity> entity, std::shared_ptr<Sc
 	TransformComponent* transform = entity->GetComponent<TransformComponent>();
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
 	flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+	flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	if (entity == selected)
 	{
 		flags |= ImGuiTreeNodeFlags_Selected;
@@ -32,11 +37,24 @@ void SceneHierarchy::DrawNode(std::shared_ptr<Entity> entity, std::shared_ptr<Sc
 	{
 		flags |= ImGuiTreeNodeFlags_Leaf;
 	}
-	
 	bool tree = ImGui::TreeNodeEx(std::string(entity->uuid).c_str(), flags, entity->GetComponent<TagComponent>()->name.c_str());
 	if (ImGui::IsItemClicked())
 	{
 		selected = entity;
+	}
+	if (ImGui::BeginPopupContextItem()) // <-- use last item id as popup id
+	{
+		if (ImGui::Button(ImGui::GetUniqueName("Add Child", entity->uuid).c_str()))
+		{
+			scene->CreateChild(entity);
+			ImGui::CloseCurrentPopup();
+		}
+		if (ImGui::Button(ImGui::GetUniqueName("Delete", entity->uuid).c_str()))
+		{
+			scene->RemoveEntity(entity);
+			ImGui::CloseCurrentPopup();
+		}
+	    ImGui::EndPopup();
 	}
 
 	if (tree)
@@ -46,5 +64,14 @@ void SceneHierarchy::DrawNode(std::shared_ptr<Entity> entity, std::shared_ptr<Sc
 			DrawNode(transform->children[i], scene);
 		}
 		ImGui::TreePop();
+	}
+}
+
+void SceneHierarchy::DrawAddEntity(std::shared_ptr<Scene> scene)
+{
+	ImGui::Spacing(5);
+	if (ImGui::Button("Add Entity", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+	{
+		scene->CreateEntity();
 	}
 }

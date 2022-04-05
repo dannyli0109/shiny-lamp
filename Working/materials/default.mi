@@ -1,0 +1,20 @@
+Material Instance: default
+UUID: 5125076e-c539-416b-bfd6-77b7cdbf529d
+Material: da4ba434-dfc6-4249-bb4d-706595ea2b83
+Modifiable: false
+Attributes:
+  - Name: u_tint
+    Type: Color
+    Value: [1, 1, 1]
+  - Name: u_diffuseTexture
+    Type: Texture
+    Value: 5527fbc9-5273-46df-8ecd-555ca9e3dee8
+  - Name: u_hasNormal
+    Type: Bool
+    Value: 0
+  - Name: u_normalTexture
+    Type: Texture
+    Value: ecc9972c-d984-4b95-acf2-3ef5757bed80
+  - Name: u_specularTexture
+    Type: Texture
+    Value: ecc9972c-d984-4b95-acf2-3ef5757bed80

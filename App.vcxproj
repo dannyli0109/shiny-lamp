@@ -15414,7 +15414,8 @@
     <ClInclude Include="lib\yaml-cpp\src\token.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\GUI.h" />
-    <ClInclude Include="src\Geometry.h" />
+    <ClInclude Include="src\gui\ResourceMenu.h" />
+    <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Graphics.h" />
     <ClInclude Include="src\InputManager.h" />
     <ClInclude Include="src\Matrices.h" />
@@ -15423,6 +15424,7 @@
     <ClInclude Include="src\Program.h" />
     <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\Resource.h" />
+    <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\Shader.h" />
     <ClInclude Include="src\Singleton.h" />
     <ClInclude Include="src\Texture.h" />
@@ -15432,7 +15434,7 @@
     <ClInclude Include="src\components\Components.h" />
     <ClInclude Include="src\components\Entity.h" />
     <ClInclude Include="src\components\Scene.h" />
-    <ClInclude Include="src\components\SceneSerialiser.h" />
+    <ClInclude Include="src\components\Serialiser.h" />
     <ClInclude Include="src\gui\Inspector.h" />
     <ClInclude Include="src\gui\SceneHierarchy.h" />
     <ClInclude Include="src\YAMLUtil.h" />
@@ -15479,18 +15481,20 @@
     <ClCompile Include="lib\yaml-cpp\src\stream.cpp" />
     <ClCompile Include="lib\yaml-cpp\src\tag.cpp" />
     <ClCompile Include="src\EntryPoint.cpp" />
-    <ClCompile Include="src\Geometry.cpp" />
+    <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\InputManager.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\OpenGLRenderer.cpp" />
     <ClCompile Include="src\Program.cpp" />
+    <ClCompile Include="src\Resource.cpp" />
+    <ClCompile Include="src\ResourceManager.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\UUID.cpp" />
     <ClCompile Include="src\Util.cpp" />
     <ClCompile Include="src\components\Components.cpp" />
     <ClCompile Include="src\components\Entity.cpp" />
     <ClCompile Include="src\components\Scene.cpp" />
-    <ClCompile Include="src\components\SceneSerialiser.cpp" />
+    <ClCompile Include="src\components\Serialiser.cpp" />
     <ClCompile Include="src\gui\Inspector.cpp" />
     <ClCompile Include="src\gui\SceneHierarchy.cpp" />
   </ItemGroup>

@@ -1,7 +1,7 @@
 #pragma once
 #include "OpenGLRenderer.h"
 #include "yaml-cpp/yaml.h"
-
+#include "Util.h"
 
 class Scene;
 class Entity;
@@ -38,10 +38,10 @@ public:
 	std::weak_ptr<Material> material;
 
 	bool Serialise(std::string folder);
-	bool SerialiseAttribute(YAML::Emitter& out, Material::MaterialAttribute& attribute);
+	bool SerialiseAttribute(YAML::Emitter& out, MaterialAttribute& attribute);
 
 	static void Deserialise(std::string path);
-	static Material::MaterialAttribute DeserialiseAttribute(YAML::Node& node);
+	static MaterialAttribute DeserialiseAttribute(YAML::Node& node);
 };
 
 class MaterialInstanceSerialiser
@@ -51,10 +51,10 @@ public:
 	std::weak_ptr<MaterialInstance> instance;
 
 	bool Serialise(std::string folder);
-	bool SerialiseAttribute(YAML::Emitter& out, Material::MaterialAttribute& attribute);
+	bool SerialiseAttribute(YAML::Emitter& out, MaterialAttribute& attribute);
 
 	static void Deserialise(std::string path);
-	static Material::MaterialAttribute DeserialiseAttribute(YAML::Node& node);
+	static MaterialAttribute DeserialiseAttribute(YAML::Node& node);
 };
 
 class TextureSerialiser
@@ -79,4 +79,35 @@ public:
 
 	static void Deserialise(std::string path);
 	static std::pair<GLuint, std::string> DeserialiseShaderData(const std::string& name, YAML::Node& data);
+};
+
+class MeshSerialiser
+{
+public:
+	MeshSerialiser(std::shared_ptr<Mesh> mesh);
+	std::weak_ptr<Mesh> mesh;
+
+	bool Serialise(std::string folder);
+	bool SerialiseVertex(YAML::Emitter& out, Vertex& vertex);
+
+	static void Deserialise(std::string path);
+	static Vertex&& DeserialiseVertex(YAML::Node& node);
+};
+
+class ModelSerialiser
+{
+public:
+	ModelSerialiser(std::shared_ptr<Model> model);
+	std::weak_ptr<Model> model;
+
+	bool Serialise(std::string folder);
+	bool SerialiseModel(YAML::Emitter& out, std::shared_ptr<Model> model);
+	static void Deserialise(std::string path);
+	static std::shared_ptr<Model> DeserialiseModel(YAML::Node& node);
+};
+
+class ResourceSerialiser
+{
+public:
+	//ResourceSerialiser()
 };

@@ -75,16 +75,18 @@ std::shared_ptr<Entity> ModelConverter::Convert(std::shared_ptr<Model> model, st
 	std::shared_ptr<Entity> entity = std::make_shared<Entity>();
 	scene->AddEntity(entity);
 	OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+	ResourceManager& resources = ResourceManager::GetSingleton();
 	std::shared_ptr<MeshRendererComponent> meshRenderer = std::make_shared<MeshRendererComponent>();
-	if (model->geometryIndices.size() > 0)
+	if (model->meshes.size() > 0)
 	{
 		entity->AddComponent(meshRenderer);
 	}
 
-	for (int i = 0; i < model->geometryIndices.size(); i++)
+	for (int i = 0; i < model->meshes.size(); i++)
 	{
-		meshRenderer->geometryIndices.push_back(model->geometryIndices[i]);
-		meshRenderer->materialIndices.push_back(0);
+		meshRenderer->meshes.push_back(model->meshes[i]);
+		//meshRenderer->materials.push_back(model->meshes[])
+		meshRenderer->materials.push_back(resources.materialInstances[1]);
 	}
 
 	for (int i = 0; i < model->children.size(); i++)

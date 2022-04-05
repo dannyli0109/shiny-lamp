@@ -1,6 +1,6 @@
 #pragma once
 #include "Matrices.h"
-#include "Geometry.h"
+#include "Mesh.h"
 #include "Shader.h"
 #include <memory>
 #include <string>
@@ -35,8 +35,8 @@ public:
 class MeshRendererComponent : public Component
 {
 public:
-	std::vector<int> geometryIndices;
-	std::vector<int> materialIndices;
+	std::vector<std::weak_ptr<Mesh>> meshes;
+	std::vector<std::weak_ptr<MaterialInstance>> materials;
 };
 
 class TagComponent : public Component

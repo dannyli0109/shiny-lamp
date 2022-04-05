@@ -49749,7 +49749,7 @@
     <ClInclude Include="src\GUI.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\Geometry.h">
+    <ClInclude Include="src\Mesh.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics.h">
@@ -49797,7 +49797,7 @@
     <ClInclude Include="src\components\Scene.h">
       <Filter>src\components</Filter>
     </ClInclude>
-    <ClInclude Include="src\components\SceneSerialiser.h">
+    <ClInclude Include="src\components\Serialiser.h">
       <Filter>src\components</Filter>
     </ClInclude>
     <ClInclude Include="src\gui\Inspector.h">
@@ -49809,6 +49809,8 @@
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\YAMLUtil.h" />
     <ClInclude Include="src\Resource.h" />
+    <ClInclude Include="src\gui\ResourceMenu.h" />
+    <ClInclude Include="src\ResourceManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\glad\glad.c">
@@ -49934,7 +49936,7 @@
     <ClCompile Include="src\EntryPoint.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Geometry.cpp">
+    <ClCompile Include="src\Mesh.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\InputManager.cpp">
@@ -49967,7 +49969,7 @@
     <ClCompile Include="src\components\Scene.cpp">
       <Filter>src\components</Filter>
     </ClCompile>
-    <ClCompile Include="src\components\SceneSerialiser.cpp">
+    <ClCompile Include="src\components\Serialiser.cpp">
       <Filter>src\components</Filter>
     </ClCompile>
     <ClCompile Include="src\gui\Inspector.cpp">
@@ -49976,6 +49978,8 @@
     <ClCompile Include="src\gui\SceneHierarchy.cpp">
       <Filter>src\gui</Filter>
     </ClCompile>
+    <ClCompile Include="src\Resource.cpp" />
+    <ClCompile Include="src\ResourceManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="lib\Assimp\include\assimp\.editorconfig">

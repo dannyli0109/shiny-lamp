@@ -1,0 +1,9 @@
+Model: soulspear
+UUID: e4a23e14-32b8-4d31-80b5-20402fd3b8b4
+Meshes: []
+Children:
+  - Model: soulspear
+    UUID: 8947a081-d14f-4a6f-82a4-88a1a32794f9
+    Meshes: [d5421a13-8f45-431c-be14-741f158cf6b2]
+    Children:
+      []

@@ -27,12 +27,11 @@ void Util::ProcessNode(aiNode* node, const aiScene* scene, std::shared_ptr<Model
 	for (int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		std::vector<Vertex> vertices;
-		std::vector<unsigned short> indices;
+		std::shared_ptr<MeshData> meshData = std::make_shared<MeshData>();
 
-		vertices.reserve(mesh->mNumVertices);
-		indices.reserve(mesh->mNumFaces);
-
+		meshData->vertices.reserve(mesh->mNumVertices);
+		meshData->indices.reserve(mesh->mNumFaces);
+		meshData->name = mesh->mName.C_Str();
 
 		for (int i = 0; i < mesh->mNumVertices; i++)
 		{
@@ -88,18 +87,27 @@ void Util::ProcessNode(aiNode* node, const aiScene* scene, std::shared_ptr<Model
 				vertex.vertBitangent = { 0, 0, 0 };
 			}
 
-			vertices.push_back(vertex);
+			meshData->vertices.push_back(vertex);
 		}
 
 		for (int i = 0; i < mesh->mNumFaces; i++)
 		{
 			for (int j = 0; j < mesh->mFaces[i].mNumIndices; j++)
 			{
-				indices.push_back(mesh->mFaces[i].mIndices[j]);
+				meshData->indices.push_back(mesh->mFaces[i].mIndices[j]);
 			}
 		}
-		std::shared_ptr<Geometry> newGeometry = std::make_shared<Geometry>(Geometry({ vertices, indices }));
-		nodePtr->geometries.push_back(newGeometry);
+		//std::shared_ptr<Mesh> newMesh = std::make_shared<Mesh>();
+
+		//newMesh->AddAttribute(Mesh::MeshAttribute({ 3, GL_FLOAT, sizeof(float) }));
+		//newMesh->AddAttribute(Mesh::MeshAttribute({ 3, GL_FLOAT, sizeof(float) }));
+		//newMesh->AddAttribute(Mesh::MeshAttribute({ 3, GL_FLOAT, sizeof(float) }));
+		//newMesh->AddAttribute(Mesh::MeshAttribute({ 3, GL_FLOAT, sizeof(float) }));
+		//newMesh->AddAttribute(Mesh::MeshAttribute({ 4, GL_FLOAT, sizeof(float) }));
+		//newMesh->AddAttribute(Mesh::MeshAttribute({ 2, GL_FLOAT, sizeof(float) }));
+		//newMesh->Init(meshData);
+
+		nodePtr->meshes.push_back(meshData);
 	}
 
 	for (unsigned int i = 0; i < node->mNumChildren; i++)

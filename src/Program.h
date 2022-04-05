@@ -10,7 +10,7 @@
 #include <memory>
 #include "components/Entity.h"
 #include "components/Scene.h"
-#include "components/SceneSerialiser.h"
+#include "components/Serialiser.h"
 #include "gui/SceneHierarchy.h"
 #include "gui/Inspector.h"
 
@@ -24,6 +24,7 @@ public:
 private:
 	bool InitWindow(int width, int height, std::string title);
 	bool InitGUI();
+	void LoadResources();
 	void BeginUpdate();
 	void UpdateGUI();
 	void Draw();

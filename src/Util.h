@@ -9,6 +9,8 @@
 #include <memory>
 #include <iostream>
 #include "Model.h";
+#include "Resource.h"
+#include "Mesh.h"
 
 namespace Util
 {

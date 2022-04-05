@@ -1,7 +1,10 @@
-#include "SceneSerialiser.h"
+#include "Serialiser.h"
 #include "Scene.h"
 #include "Shader.h"
 #include <fstream>
+#include "ResourceManager.h"
+#include "Resource.h"
+
 
 namespace YAML {
     template <>
@@ -139,8 +142,9 @@ bool SceneSerialiser::Serialise(std::string folder)
     out << YAML::Key << "Entities" << YAML::Value;
     
     out << YAML::BeginSeq;
-    for (auto [uuid, entity] : scene.lock()->entities)
+    for (auto entity : scene.lock()->entities)
     {
+        if (!entity) continue;
         SerialiseEntity(out, entity);
     }
     out << YAML::EndSeq;
@@ -215,21 +219,22 @@ bool SceneSerialiser::SerialiseMeshRenderer(YAML::Emitter& out, std::shared_ptr<
         out << YAML::Key << "MeshRenderer" << YAML::Value;
         out << YAML::BeginMap;
 
-        out << YAML::Key << "Geometries" << YAML::Value;
+        out << YAML::Key << "Meshes" << YAML::Value;
         out << YAML::Flow;
         out << YAML::BeginSeq;
-        for (int i = 0; i < meshRenderer->geometryIndices.size(); i++)
+        for (int i = 0; i < meshRenderer->meshes.size(); i++)
         {
-            out << meshRenderer->geometryIndices[i];
+            out << meshRenderer->meshes[i].lock()->uuid;
         }
         out << YAML::EndSeq;
 
         out << YAML::Key << "Materials" << YAML::Value;
-        out << YAML::Flow;
         out << YAML::BeginSeq;
-        for (int i = 0; i < meshRenderer->materialIndices.size(); i++)
+        OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+        ResourceManager& resources = ResourceManager::GetSingleton();
+        for (int i = 0; i < meshRenderer->materials.size(); i++)
         {
-            out << meshRenderer->materialIndices[i];
+            out << meshRenderer->materials[i].lock()->uuid;
         }
         out << YAML::EndSeq;
 
@@ -251,7 +256,7 @@ std::shared_ptr<Scene> SceneSerialiser::Deserialise(std::string path)
     {
         YAML::Node entityNode = entitiesNode[i];
         std::shared_ptr<Entity> entity = DeserialiseEntity(entityNode);
-        scene->AddEntity(entity);
+        scene->AddEntityInternal(entity);
     }
 
     for (int i = 0; i < entitiesNode.size(); i++)
@@ -319,11 +324,21 @@ std::shared_ptr<TransformComponent> SceneSerialiser::DeserialiseTransform(YAML::
 std::shared_ptr<MeshRendererComponent> SceneSerialiser::DeserialiseMeshRenderer(YAML::Node& node)
 {
     if (!node.IsDefined()) return nullptr;
-    std::vector<int> geometries = node["Geometries"].as<std::vector<int>>();
-    std::vector<int> materials = node["Materials"].as<std::vector<int>>();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+    std::vector<std::string> meshIds = node["Meshes"].as<std::vector<std::string>>();
+    std::vector<std::string> materials = node["Materials"].as<std::vector<std::string>>();
     std::shared_ptr<MeshRendererComponent> meshRenderer = std::make_shared<MeshRendererComponent>();
-    meshRenderer->geometryIndices = geometries;
-    meshRenderer->materialIndices = materials;
+    // getmesh
+    for (int i = 0; i < meshIds.size(); i++)
+    {
+        meshRenderer->meshes.push_back(resources.GetMesh(meshIds[i]));
+    }
+    //meshRenderer->geometryIndices = geometries;
+    for (int i = 0; i < materials.size(); i++)
+    {
+        meshRenderer->materials.push_back(resources.GetMaterialInstance(materials[i]));
+    }
     return meshRenderer;
 }
 
@@ -356,62 +371,62 @@ bool MaterialSerialiser::Serialise(std::string folder)
     return true;
 }
 
-bool MaterialSerialiser::SerialiseAttribute(YAML::Emitter& out, Material::MaterialAttribute& attribute)
+bool MaterialSerialiser::SerialiseAttribute(YAML::Emitter& out, MaterialAttribute& attribute)
 {
     out << YAML::BeginMap;
     out << YAML::Key << "Name" << YAML::Value << attribute.name;
     switch (attribute.type)
     {
-    case Material::MaterialAttributeType::Texture:
+    case MaterialAttributeType::Texture:
     {
         OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
         out << YAML::Key << "Type" << YAML::Value << "Texture";
         out << YAML::Key << "Value" << YAML::Value << attribute.textureValue.lock()->uuid;
         break;
     }
-    case Material::MaterialAttributeType::Float:
+    case MaterialAttributeType::Float:
     {
         out << YAML::Key << "Type" << YAML::Value << "Float";
         out << YAML::Key << "Value" << YAML::Value << attribute.floatValue;
         break;
     }
-    case Material::MaterialAttributeType::Int:
+    case MaterialAttributeType::Int:
     {
         out << YAML::Key << "Type" << YAML::Value << "Int";
         out << YAML::Key << "Value" << YAML::Value << attribute.intValue;
         break;
     }
-    case Material::MaterialAttributeType::Vector2:
+    case MaterialAttributeType::Vector2:
     {
         out << YAML::Key << "Type" << YAML::Value << "Vector2";
         out << YAML::Key << "Value" << YAML::Value << attribute.vector2Value;
         break;
     }
-    case Material::MaterialAttributeType::Vector3:
+    case MaterialAttributeType::Vector3:
     {
         out << YAML::Key << "Type" << YAML::Value << "Vector3";
         out << YAML::Key << "Value" << YAML::Value << attribute.vector3Value;
         break;
     }
-    case Material::MaterialAttributeType::Vector4:
+    case MaterialAttributeType::Vector4:
     {
         out << YAML::Key << "Type" << YAML::Value << "Vector4";
         out << YAML::Key << "Value" << YAML::Value << attribute.vector4Value;
         break;
     }
-    case Material::MaterialAttributeType::Mat4:
+    case MaterialAttributeType::Mat4:
     {
         out << YAML::Key << "Type" << YAML::Value << "Mat4";
         out << YAML::Key << "Value" << YAML::Value << attribute.mat4Value;
         break;
     }
-    case Material::MaterialAttributeType::Color:
+    case MaterialAttributeType::Color:
     {
         out << YAML::Key << "Type" << YAML::Value << "Color";
         out << YAML::Key << "Value" << YAML::Value << attribute.vector3Value;
         break;
     }
-    case Material::MaterialAttributeType::Bool:
+    case MaterialAttributeType::Bool:
     {
         out << YAML::Key << "Type" << YAML::Value << "Bool";
         out << YAML::Key << "Value" << YAML::Value << attribute.intValue;
@@ -433,82 +448,86 @@ void MaterialSerialiser::Deserialise(std::string path)
     YAML::Node attributeNodes = file["Attributes"];
 
 
-    OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
     std::string materialName = materialNode.as<std::string>();
     std::string uuid = uuidNode.as<std::string>();
     std::string shaderId = shaderNode.as<std::string>();
-    std::shared_ptr<Shader> shader = renderer.GetShader(shaderId);
+    std::shared_ptr<Shader> shader = resources.GetShader(shaderId);
 
-    std::vector<Material::MaterialAttribute> attributes;
+    std::vector<MaterialAttribute> attributes;
     for (int i = 0; i < attributeNodes.size(); i++)
     {
         YAML::Node attributeNode = attributeNodes[i];
         attributes.push_back(DeserialiseAttribute(attributeNode));
     }
 
-    renderer.LoadMaterialWithId(shader, materialName, attributes, uuid);
+    resources.LoadMaterialWithId(shader, materialName, attributes, uuid);
 }
 
-Material::MaterialAttribute MaterialSerialiser::DeserialiseAttribute(YAML::Node& node)
+MaterialAttribute MaterialSerialiser::DeserialiseAttribute(YAML::Node& node)
 {
-    OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
     YAML::Node nameNode = node["Name"];
     YAML::Node typeNode = node["Type"];
     YAML::Node valueNode = node["Value"];
     std::string attributeName = nameNode.as<std::string>();
     std::string typeName = typeNode.as<std::string>();
-    Material::MaterialAttributeType type = Material::attributeNameMap[typeName];
+    MaterialAttributeType type = MaterialAttribute::GetTypeFromName(typeName);
 
     switch (type)   
     {
-    case Material::MaterialAttributeType::Texture:
+    case MaterialAttributeType::Texture:
     {
         std::string textureId = valueNode.as<std::string>();
-        return Material::MaterialAttribute(attributeName, renderer.GetTexture(textureId));
+        return MaterialAttribute(attributeName, resources.GetTexture(textureId));
     }
-    case Material::MaterialAttributeType::Float:
+    case MaterialAttributeType::Float:
     {
         float floatValue = valueNode.as<float>();
-        return Material::MaterialAttribute(attributeName, floatValue);
+        return MaterialAttribute(attributeName, floatValue);
     }
-    case Material::MaterialAttributeType::Int:
+    case MaterialAttributeType::Int:
     {
         int intValue = valueNode.as<int>();
-        return Material::MaterialAttribute(attributeName, intValue);
+        return MaterialAttribute(attributeName, intValue);
     }
-    case Material::MaterialAttributeType::Vector2:
+    case MaterialAttributeType::Vector2:
     {
         glm::vec2 vec2Value = valueNode.as<glm::vec2>();
-        return Material::MaterialAttribute(attributeName, vec2Value);
+        return MaterialAttribute(attributeName, vec2Value);
     }
-    case Material::MaterialAttributeType::Vector3:
+    case MaterialAttributeType::Vector3:
     {
         glm::vec3 vec3Value = valueNode.as<glm::vec3>();
-        return Material::MaterialAttribute(attributeName, vec3Value);
+        return MaterialAttribute(attributeName, vec3Value);
     }
-    case Material::MaterialAttributeType::Vector4:
+    case MaterialAttributeType::Vector4:
     {
         glm::vec4 vec4Value = valueNode.as<glm::vec4>();
-        return Material::MaterialAttribute(attributeName, vec4Value);
+        return MaterialAttribute(attributeName, vec4Value);
     }
-    case Material::MaterialAttributeType::Mat4:
+    case MaterialAttributeType::Mat4:
     {
         glm::mat4 mat4Value = valueNode.as<glm::mat4>();
-        return Material::MaterialAttribute(attributeName, mat4Value);
+        return MaterialAttribute(attributeName, mat4Value);
     }
-    case Material::MaterialAttributeType::Color:
+    case MaterialAttributeType::Color:
     {
         glm::vec3 vec3Value = valueNode.as<glm::vec3>();
-        return Material::MaterialAttribute(attributeName, vec3Value, Material::MaterialAttributeType::Color);
+        return MaterialAttribute(attributeName, vec3Value, MaterialAttributeType::Color);
     }
-    case Material::MaterialAttributeType::Bool:
+    case MaterialAttributeType::Bool:
     {
         // store as int init as bool
         bool boolValue = valueNode.as<int>();
-        return Material::MaterialAttribute(attributeName, boolValue);
+        return MaterialAttribute(attributeName, boolValue);
     }
     default:
-        return Material::MaterialAttribute();
+        return MaterialAttribute();
     }    
 }
 
@@ -536,53 +555,53 @@ bool MaterialInstanceSerialiser::Serialise(std::string folder)
     out << YAML::EndSeq;
     out << YAML::EndMap;
 
-    std::string path = folder + instance.lock()->name + ".mi";
+    std::string path =  folder + instance.lock()->name + ".mi";
     std::ofstream fout(path);
     fout << out.c_str();
     fout.close();
     return true;
 }
 
-bool MaterialInstanceSerialiser::SerialiseAttribute(YAML::Emitter& out, Material::MaterialAttribute& attribute)
+bool MaterialInstanceSerialiser::SerialiseAttribute(YAML::Emitter& out, MaterialAttribute& attribute)
 {
     out << YAML::BeginMap;
     out << YAML::Key << "Name" << YAML::Value << attribute.name;
-    out << YAML::Key << "Type" << YAML::Value << Material::attributeTypeMap[attribute.type];
+    out << YAML::Key << "Type" << YAML::Value << MaterialAttribute::GetNameFromType(attribute.type);
     switch (attribute.type)
     {
-    case Material::MaterialAttributeType::Texture:
+    case MaterialAttributeType::Texture:
     {
         out << YAML::Key << "Value" << YAML::Value << attribute.textureValue.lock()->uuid;
         break;
     }
-    case Material::MaterialAttributeType::Float:
+    case MaterialAttributeType::Float:
     {
         out << YAML::Key << "Value" << YAML::Value << attribute.floatValue;
         break;
     }
-    case Material::MaterialAttributeType::Bool:
-    case Material::MaterialAttributeType::Int:
+    case MaterialAttributeType::Bool:
+    case MaterialAttributeType::Int:
     {
         out << YAML::Key << "Value" << YAML::Value << attribute.intValue;
         break;
     }
-    case Material::MaterialAttributeType::Vector2:
+    case MaterialAttributeType::Vector2:
     {
         out << YAML::Key << "Value" << YAML::Value << attribute.vector2Value;
         break;
     }
-    case Material::MaterialAttributeType::Vector3:
-    case Material::MaterialAttributeType::Color:
+    case MaterialAttributeType::Vector3:
+    case MaterialAttributeType::Color:
     {
         out << YAML::Key << "Value" << YAML::Value << attribute.vector3Value;
         break;
     }
-    case Material::MaterialAttributeType::Vector4:
+    case MaterialAttributeType::Vector4:
     {
         out << YAML::Key << "Value" << YAML::Value << attribute.vector4Value;
         break;
     }
-    case Material::MaterialAttributeType::Mat4:
+    case MaterialAttributeType::Mat4:
     {
         out << YAML::Key << "Value" << YAML::Value << attribute.mat4Value;
         break;
@@ -596,7 +615,9 @@ bool MaterialInstanceSerialiser::SerialiseAttribute(YAML::Emitter& out, Material
 
 void MaterialInstanceSerialiser::Deserialise(std::string path)
 {
-    OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
     YAML::Node file = YAML::LoadFile(path);
     YAML::Node materialInstanceNode = file["Material Instance"];
     YAML::Node materialNode = file["Material"];
@@ -606,14 +627,14 @@ void MaterialInstanceSerialiser::Deserialise(std::string path)
 
     std::string uuid = uuidNode.as<std::string>();
     std::string baseMaterialId = materialNode.as<std::string>();
-    std::shared_ptr<Material> baseMaterial = renderer.GetMaterial(baseMaterialId);
+    std::shared_ptr<Material> baseMaterial = resources.GetMaterial(baseMaterialId);
     std::string name = materialInstanceNode.as<std::string>();
     
     bool modifiable = modifiableNode.as<bool>();
 
-    std::shared_ptr<MaterialInstance> mi = renderer.LoadMaterialInstanceWithId(baseMaterial, name, modifiable, uuid);
+    std::shared_ptr<MaterialInstance> mi = resources.LoadMaterialInstanceWithId(baseMaterial, name, modifiable, uuid);
 
-    std::vector<Material::MaterialAttribute> attributes;
+    std::vector<MaterialAttribute> attributes;
     for (int i = 0; i < attributeNodes.size(); i++)
     {
         YAML::Node attributeNode = attributeNodes[i];
@@ -626,66 +647,68 @@ void MaterialInstanceSerialiser::Deserialise(std::string path)
     }
 }
 
-Material::MaterialAttribute MaterialInstanceSerialiser::DeserialiseAttribute(YAML::Node& node)
+MaterialAttribute MaterialInstanceSerialiser::DeserialiseAttribute(YAML::Node& node)
 {
-    OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
     YAML::Node nameNode = node["Name"];
     YAML::Node typeNode = node["Type"];
     YAML::Node valueNode = node["Value"];
     std::string attributeName = nameNode.as<std::string>();
     std::string typeName = typeNode.as<std::string>();
-    Material::MaterialAttributeType type = Material::attributeNameMap[typeName];
+    MaterialAttributeType type = MaterialAttribute::GetTypeFromName(typeName);
 
     switch (type)
     {
-    case Material::MaterialAttributeType::Texture:
+    case MaterialAttributeType::Texture:
     {
         std::string textureId = valueNode.as<std::string>();
-        return Material::MaterialAttribute(attributeName, renderer.GetTexture(textureId));
+        return MaterialAttribute(attributeName, resources.GetTexture(textureId));
     }
-    case Material::MaterialAttributeType::Float:
+    case MaterialAttributeType::Float:
     {
         float floatValue = valueNode.as<float>();
-        return Material::MaterialAttribute(attributeName, floatValue);
+        return MaterialAttribute(attributeName, floatValue);
     }
-    case Material::MaterialAttributeType::Int:
+    case MaterialAttributeType::Int:
     {
         int intValue = valueNode.as<int>();
-        return Material::MaterialAttribute(attributeName, intValue);
+        return MaterialAttribute(attributeName, intValue);
     }
-    case Material::MaterialAttributeType::Vector2:
+    case MaterialAttributeType::Vector2:
     {
         glm::vec2 vec2Value = valueNode.as<glm::vec2>();
-        return Material::MaterialAttribute(attributeName, vec2Value);
+        return MaterialAttribute(attributeName, vec2Value);
     }
-    case Material::MaterialAttributeType::Vector3:
+    case MaterialAttributeType::Vector3:
     {
         glm::vec3 vec3Value = valueNode.as<glm::vec3>();
-        return Material::MaterialAttribute(attributeName, vec3Value);
+        return MaterialAttribute(attributeName, vec3Value);
     }
-    case Material::MaterialAttributeType::Vector4:
+    case MaterialAttributeType::Vector4:
     {
         glm::vec4 vec4Value = valueNode.as<glm::vec4>();
-        return Material::MaterialAttribute(attributeName, vec4Value);
+        return MaterialAttribute(attributeName, vec4Value);
     }
-    case Material::MaterialAttributeType::Mat4:
+    case MaterialAttributeType::Mat4:
     {
         glm::mat4 mat4Value = valueNode.as<glm::mat4>();
-        return Material::MaterialAttribute(attributeName, mat4Value);
+        return MaterialAttribute(attributeName, mat4Value);
     }
-    case Material::MaterialAttributeType::Color:
+    case MaterialAttributeType::Color:
     {
         glm::vec3 vec3Value = valueNode.as<glm::vec3>();
-        return Material::MaterialAttribute(attributeName, vec3Value, Material::MaterialAttributeType::Color);
+        return MaterialAttribute(attributeName, vec3Value, MaterialAttributeType::Color);
     }
-    case Material::MaterialAttributeType::Bool:
+    case MaterialAttributeType::Bool:
     {
         // store as int init as bool
         bool boolValue = valueNode.as<int>();
-        return Material::MaterialAttribute(attributeName, boolValue);
+        return MaterialAttribute(attributeName, boolValue);
     }
     default:
-        return Material::MaterialAttribute();
+        return MaterialAttribute();
     }
 }
 
@@ -717,7 +740,9 @@ void TextureSerialiser::Deserialise(std::string path)
         UUID: 89b9c788-c8fd-4de3-ab77-34e141cbdb31
         Filepath: black.png
     */
-    OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
     YAML::Node file = YAML::LoadFile(path);
     YAML::Node textureNode = file["Texture"];
     YAML::Node uuidNode = file["UUID"];
@@ -725,7 +750,7 @@ void TextureSerialiser::Deserialise(std::string path)
     std::string textureName = textureNode.as<std::string>();
     std::string uuid = uuidNode.as<std::string>();
     std::string filepath = filepathNode.as<std::string>();
-    renderer.LoadTextureWithId(textureName, filepath, uuid);
+    resources.LoadTextureWithId(textureName, filepath, uuid);
 }
 
 ShaderSerialiser::ShaderSerialiser(std::shared_ptr<Shader> shader)
@@ -772,7 +797,9 @@ void ShaderSerialiser::Deserialise(std::string path)
     YAML::Node dataNodes = file["Data"];
     std::string shaderName = shaderNode.as<std::string>();
     std::string uuid = uuidNode.as<std::string>();
-    OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
 
     std::vector<std::pair<GLuint, std::string>> shaderDatas;
     for (int i = 0; i < dataNodes.size(); i++)
@@ -780,7 +807,7 @@ void ShaderSerialiser::Deserialise(std::string path)
         YAML::Node dataNode = dataNodes[i];
         shaderDatas.push_back(DeserialiseShaderData(shaderName, dataNode));
     }
-    renderer.LoadShaderWithId(shaderName, shaderDatas, uuid);
+    resources.LoadShaderWithId(shaderName, shaderDatas, uuid);
 }
 
 std::pair<GLuint, std::string> ShaderSerialiser::DeserialiseShaderData(const std::string& name, YAML::Node& data)
@@ -791,3 +818,176 @@ std::pair<GLuint, std::string> ShaderSerialiser::DeserialiseShaderData(const std
     std::string filepath = filepathNode.as<std::string>();
     return { type, filepath };
 }
+
+MeshSerialiser::MeshSerialiser(std::shared_ptr<Mesh> mesh)
+{
+    this->mesh = mesh;
+}
+
+bool MeshSerialiser::Serialise(std::string folder)
+{
+    YAML::Emitter out;
+    out << YAML::BeginMap;
+    out << YAML::Key << "Mesh" << YAML::Value << mesh.lock()->name;
+    out << YAML::Key << "UUID" << YAML::Value << mesh.lock()->uuid;
+    out << YAML::Key << "Vertices" << YAML::Value;
+
+    out << YAML::BeginSeq;
+    std::vector<Vertex>& vertices = mesh.lock()->data->vertices;
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        SerialiseVertex(out, vertices[i]);
+    }
+    out << YAML::EndSeq;
+
+    std::vector<unsigned short>& indices = mesh.lock()->data->indices;
+    out << YAML::Key << "Indices" << YAML::Value;
+    out << YAML::Flow;
+    out << indices;
+    out << YAML::EndMap;
+    std::string path = folder + mesh.lock()->name + ".mesh";
+    std::ofstream fout(path);
+    fout << out.c_str();
+    fout.close();
+    return true;
+}
+
+bool MeshSerialiser::SerialiseVertex(YAML::Emitter& out, Vertex& vertex)
+{
+    out << YAML::Flow;
+    out << YAML::BeginSeq;
+    out << vertex.position;
+    out << vertex.normal;
+    out << vertex.vertTangent;
+    out << vertex.vertBitangent;
+    out << vertex.color;
+    out << vertex.uv;
+    out << YAML::EndSeq;
+    return true;
+}
+
+void MeshSerialiser::Deserialise(std::string path)
+{
+    YAML::Node file = YAML::LoadFile(path);
+    YAML::Node meshNode = file["Mesh"];
+    YAML::Node uuidNode = file["UUID"];
+    YAML::Node vertexNodes = file["Vertices"];
+    YAML::Node indexNodes = file["Indices"];
+
+    std::string meshName = meshNode.as<std::string>();
+    std::string uuid = uuidNode.as<std::string>();
+
+    std::shared_ptr<MeshData> meshData = std::make_shared<MeshData>();
+
+    for (int i = 0; i < vertexNodes.size(); i++)
+    {
+         meshData->vertices.push_back(DeserialiseVertex(vertexNodes[i]));
+    }
+
+    meshData->indices = indexNodes.as<std::vector<unsigned short>>();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
+    
+    resources.LoadMeshWithId(meshName, meshData, uuid);
+
+}
+
+Vertex&& MeshSerialiser::DeserialiseVertex(YAML::Node& node)
+{
+    return Vertex(
+        {
+            node[0].as<glm::vec3>(),
+            node[1].as<glm::vec3>(),
+            node[2].as<glm::vec3>(),
+            node[3].as<glm::vec3>(),
+            node[4].as<glm::vec4>(),
+            node[5].as<glm::vec2>()
+        }
+    );
+}
+
+ModelSerialiser::ModelSerialiser(std::shared_ptr<Model> model)
+{
+    this->model = model;
+}
+
+bool ModelSerialiser::Serialise(std::string folder)
+{
+    YAML::Emitter out;
+    SerialiseModel(out, model.lock());
+    std::string path = Util::GetValidFilename(folder + model.lock()->name, "model");
+    std::ofstream fout(path);
+    fout << out.c_str();
+    fout.close();
+    return true;
+}
+
+bool ModelSerialiser::SerialiseModel(YAML::Emitter& out, std::shared_ptr<Model> model)
+{
+    out << YAML::BeginMap;
+    out << YAML::Key << "Model" << YAML::Value << model->name;
+    out << YAML::Key << "UUID" << YAML::Value << model->uuid;
+    out << YAML::Key << "Meshes" << YAML::Value;
+
+    out << YAML::Flow;
+    out << YAML::BeginSeq;
+    std::vector<std::shared_ptr<Mesh>> meshes = model->meshes;
+    for (int i = 0; i < meshes.size(); i++)
+    {
+        out << meshes[i]->uuid;
+    }
+    out << YAML::EndSeq;
+
+    out << YAML::Key << "Children" << YAML::Value;
+    out << YAML::BeginSeq;
+    std::vector<std::shared_ptr<Model>> children = model->children;
+    for (int i = 0; i < children.size(); i++)
+    {
+        SerialiseModel(out, children[i]);
+    }
+    out << YAML::EndSeq;
+    out << YAML::EndMap;
+    return true;
+}
+
+void ModelSerialiser::Deserialise(std::string path)
+{
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
+    YAML::Node file = YAML::LoadFile(path);
+    std::shared_ptr<Model> model = DeserialiseModel(file);
+    resources.models.push_back(model);
+    //resources.modelMap[model->uuid] = renderer.models.size() - 1;
+}
+
+std::shared_ptr<Model> ModelSerialiser::DeserialiseModel(YAML::Node& node)
+{
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
+
+    YAML::Node modelNode = node["Model"];
+    YAML::Node uuidNode = node["UUID"];
+    YAML::Node meshNodes = node["Meshes"];
+    YAML::Node childrenNodes = node["Children"];
+
+    std::string modelName = modelNode.as<std::string>();
+    std::string uuid = uuidNode.as<std::string>();
+
+    //renderer.LoadModelWithId()
+    std::shared_ptr<ModelData> modelData = std::make_shared<ModelData>();
+
+    for (int i = 0; i < meshNodes.size(); i++)
+    {
+        modelData->meshes.push_back(resources.GetMesh(meshNodes[i].as<std::string>())->data);
+    }
+
+    std::shared_ptr<Model> model = resources.LoadModelWithId(modelName, modelData, uuid);
+    for (int i = 0; i < childrenNodes.size(); i++)
+    {
+        model->children.push_back(DeserialiseModel(childrenNodes[i]));
+    }
+    return model;
+}
+

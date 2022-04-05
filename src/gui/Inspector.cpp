@@ -77,8 +77,8 @@ void Inspector::Update(float deltaTime, std::shared_ptr<Entity> entity)
 	DrawTransform(entity);
 	ImGui::Separator();
 	DrawMeshRenderer(entity);
-	//DrawMaterial(entity);
 	ImGui::Separator();
+	DrawAddComponent(entity);
 	ImGui::End();
 }
 
@@ -126,20 +126,24 @@ void Inspector::DrawMaterial(std::shared_ptr<MaterialInstance> material)
 		if (!material->modifiable) ImGui::BeginDisabled();
 		for (int i = 0; i < material->parameters.size(); i++)
 		{
-			Material::MaterialAttribute& attribute = material->parameters[i];
+			MaterialAttribute& attribute = material->parameters[i];
 				
 			switch (material->parameters[i].type)
 			{
-			case Material::MaterialAttributeType::Texture:
+			case MaterialAttributeType::Texture:
 			{
 				if (ImGui::TreeNodeEx(attribute.name.c_str()))
 				{
-					OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
-					std::vector<char*> textureNames = GetResourceNames(renderer.textures);
+					//OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+					ResourceManager& resources = ResourceManager::GetSingleton();
+
+					std::vector<char*> textureNames = GetResourceNames(resources.textures);
 					//std::string
-					int index = renderer.textureMap[attribute.textureValue.lock()->uuid];
+					//int index = renderer.textureMap[attribute.textureValue.lock()->uuid];
+					int index = resources.GetTextureIndex(attribute.textureValue.lock()->uuid);
+
 					ImGui::Combo(attribute.name.c_str(), &index, textureNames.data(), textureNames.size());
-					attribute.textureValue = renderer.textures[index];
+					attribute.textureValue = resources.textures[index];
 
 					float width = ImGui::GetContentRegionAvail().x;
 					float aspect = attribute.textureValue.lock()->size.x / attribute.textureValue.lock()->size.y;
@@ -148,23 +152,23 @@ void Inspector::DrawMaterial(std::shared_ptr<MaterialInstance> material)
 				}
 				break;
 			}
-			case Material::MaterialAttributeType::Float:
+			case MaterialAttributeType::Float:
 				break;
-			case Material::MaterialAttributeType::Int:
+			case MaterialAttributeType::Int:
 				break;
-			case Material::MaterialAttributeType::Vector2:
+			case MaterialAttributeType::Vector2:
 				break;
-			case Material::MaterialAttributeType::Vector3:
+			case MaterialAttributeType::Vector3:
 				ImGui::DragFloat3(attribute.name.c_str(), &attribute.vector3Value.x);
 				break;
-			case Material::MaterialAttributeType::Vector4:
+			case MaterialAttributeType::Vector4:
 				break;
-			case Material::MaterialAttributeType::Mat4:
+			case MaterialAttributeType::Mat4:
 				break;
-			case Material::MaterialAttributeType::Color:
+			case MaterialAttributeType::Color:
 				ImGui::ColorEdit3(attribute.name.c_str(), &attribute.vector3Value.x);
 				break;
-			case Material::MaterialAttributeType::Bool:
+			case MaterialAttributeType::Bool:
 			{
 				bool b = attribute.intValue;
 				ImGui::Checkbox(attribute.name.c_str(), &b);
@@ -181,20 +185,95 @@ void Inspector::DrawMaterial(std::shared_ptr<MaterialInstance> material)
 	}
 }
 
+void Inspector::DrawMesh(std::shared_ptr<Mesh> mesh)
+{
+	if (ImGui::TreeNodeEx("Mesh"))
+	{
+		//OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+		ResourceManager& resources = ResourceManager::GetSingleton();
+
+		std::vector<char*> meshNames = GetResourceNames(resources.meshes);
+		int index = resources.GetMeshIndex(mesh->uuid);
+		ImGui::Combo(mesh->name.c_str(), &index, meshNames.data(), meshNames.size());
+		mesh = resources.meshes[index];
+		ImGui::TreePop();
+	}
+}
+
 void Inspector::DrawMeshRenderer(std::shared_ptr<Entity> entity)
 {
 	MeshRendererComponent* meshRendererComponent = entity->GetComponent<MeshRendererComponent>();
 	if (meshRendererComponent)
 	{
-		OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
-		for (int i = 0; i < meshRendererComponent->geometryIndices.size(); i++)
+		if (ImGui::TreeNodeEx("MeshRenderer Component"))
 		{
-			if (ImGui::TreeNodeEx("Mesh"))
+			//OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+			ResourceManager& resources = ResourceManager::GetSingleton();
+			for (int i = 0; i < meshRendererComponent->meshes.size(); i++)
 			{
-				std::shared_ptr<MaterialInstance> material = renderer.materialInstances[meshRendererComponent->materialIndices[i]];
-				DrawMaterial(material);
-				ImGui::TreePop();
+				std::string str = ImGui::GetUniqueName("Mesh", std::to_string(i));
+				if (ImGui::TreeNodeEx(str.c_str()))
+				{
+					std::shared_ptr<Mesh> mesh = meshRendererComponent->meshes[i].lock();
+					DrawMesh(mesh);
+
+					std::shared_ptr<MaterialInstance> material = meshRendererComponent->materials[i].lock();
+					DrawMaterial(material);
+
+					ImGui::TreePop();
+				}
 			}
+
+			std::string str = ImGui::GetUniqueName("Add Mesh", entity->uuid);
+			if (ImGui::Button(str.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+			{
+				ImGui::OpenPopup(str.c_str());
+			}
+
+			if (ImGui::BeginPopup(str.c_str())) 
+			{
+				for (int i = 0; i < resources.meshes.size(); i++)
+				{
+					if (ImGui::Selectable(ImGui::GetUniqueName(resources.meshes[i]->name.c_str(), resources.meshes[i]->uuid).c_str()))
+					{
+						meshRendererComponent->meshes.push_back(resources.meshes[i]);
+
+						meshRendererComponent->materials.push_back(resources.materialInstances[0]);
+						ImGui::CloseCurrentPopup();
+					}
+				}
+				ImGui::EndPopup();
+			}
+			ImGui::TreePop();
+		}
+	}
+}
+
+void Inspector::DrawAddComponent(std::shared_ptr<Entity> entity)
+{
+	std::string str = ImGui::GetUniqueName("Add Component", entity->uuid);
+	if (ImGui::Button(str.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+	{
+		ImGui::OpenPopup(str.c_str());
+	}
+
+	if (ImGui::BeginPopup(str.c_str())) // <-- use last item id as popup id
+	{
+		DrawAddMeshRendererComponent(entity);
+		ImGui::EndPopup();
+	}
+}
+
+void Inspector::DrawAddMeshRendererComponent(std::shared_ptr<Entity> entity)
+{
+	MeshRendererComponent* meshRendererComponent = entity->GetComponent<MeshRendererComponent>();
+	if (!meshRendererComponent)
+	{
+		if (ImGui::Selectable(ImGui::GetUniqueName("Mesh Renderer", entity->uuid).c_str()))
+		{
+			std::shared_ptr<MeshRendererComponent> component = std::make_shared<MeshRendererComponent>();
+			entity->AddComponent(component);
+			ImGui::CloseCurrentPopup();
 		}
 	}
 }

@@ -5,4 +5,4 @@ Modifiable: true
 Attributes:
   - Name: u_color
     Type: Color
-    Value: [1, 0, 0]
+    Value: [0.898039222, 0, 1]

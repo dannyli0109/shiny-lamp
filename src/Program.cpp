@@ -42,6 +42,31 @@ bool Program::InitGUI()
     return true;
 }
 
+void Program::LoadResources()
+{
+    TextureSerialiser::Deserialise("textures/black.texture");
+    TextureSerialiser::Deserialise("textures/white.texture");
+    TextureSerialiser::Deserialise("textures/soulspear diffuse.texture");
+    TextureSerialiser::Deserialise("textures/soulspear normal.texture");
+    TextureSerialiser::Deserialise("textures/soulspear specular.texture");
+
+    ShaderSerialiser::Deserialise("shaders/Phong.shader");
+    ShaderSerialiser::Deserialise("shaders/Color.shader");
+
+    MaterialSerialiser::Deserialise("base_materials/PhongLighting.material");
+    MaterialSerialiser::Deserialise("base_materials/Color.material");
+
+    MaterialInstanceSerialiser::Deserialise("materials/default.mi");
+    MaterialInstanceSerialiser::Deserialise("materials/SoulspearPhongLighting.mi");
+    MaterialInstanceSerialiser::Deserialise("materials/Color.mi");
+
+    MeshSerialiser::Deserialise("meshes/defaultobject.mesh");
+
+    ModelSerialiser::Deserialise("models/soulspear.model");
+
+    scene = SceneSerialiser::Deserialise("scenes/UntitledScene.scene");
+}
+
 
 
 void Program::SetGUITheme()
@@ -51,7 +76,7 @@ void Program::SetGUITheme()
 
     /// 0 = FLAT APPEARENCE
     /// 1 = MORE "3D" LOOK
-    int is3D = 1;
+    int is3D = 0;
 
     colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImGuiCol_TextDisabled] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
@@ -142,7 +167,8 @@ bool Program::Init(int width, int height, std::string title)
     InitWindow(width, height, title);
     
     OpenGLRenderer& renderer = OpenGLRenderer::Create();
-    renderer.LoadModel("soulspear/soulspear.obj");
+    ResourceManager& resources = ResourceManager::Create();
+    //renderer.LoadModel("soulspear", "soulspear/soulspear.obj");
 
     ModelConverter converter;
 
@@ -150,33 +176,16 @@ bool Program::Init(int width, int height, std::string title)
     sceneHierarchy = std::make_shared<SceneHierarchy>();
     inspector = std::make_shared<Inspector>();
   
-    //entity = converter.Convert(renderer.models[OpenGLRenderer::SoulSpearModel]);
-    renderer.InitRenderBuffer(w, h, 8);
+    renderer.InitRenderBuffer(w, h, 4);
     renderer.InitFrameBuffer(w, h);
     renderer.InitCamera({ 0, 0, 10 }, { 0, 1, 0 }, glm::radians(270.0f), glm::radians(0.0f), glm::radians(45.0f), w / h, 0.1f, 100);
 
-    TextureSerialiser::Deserialise("textures/black.texture");
-    TextureSerialiser::Deserialise("textures/white.texture");
-    TextureSerialiser::Deserialise("textures/soulspear diffuse.texture");
-    TextureSerialiser::Deserialise("textures/soulspear normal.texture");
-    TextureSerialiser::Deserialise("textures/soulspear specular.texture");
-
-    ShaderSerialiser::Deserialise("shaders/Phong.shader");
-    ShaderSerialiser::Deserialise("shaders/Color.shader");
+    LoadResources();
+    //converter.Convert(renderer.models[OpenGLRenderer::SoulSpearModel], scene);
 
     renderer.LinkShaders();
-
-    MaterialSerialiser::Deserialise("base_materials/PhongLighting.material");
-    MaterialSerialiser::Deserialise("base_materials/Color.material");
-
-    MaterialInstanceSerialiser::Deserialise("materials/SoulspearPhongLighting.mi");
-    MaterialInstanceSerialiser::Deserialise("materials/Color.mi");
-
-    scene = SceneSerialiser::Deserialise("scenes/UntitledScene.scene");
     InputManager::Create();
-
     InitGUI();
-
 
     previousTime = glfwGetTime();
     return true;
@@ -216,13 +225,6 @@ void Program::Update()
 
 void Program::UpdateGUI()
 {
-    // begin imgui window
-    //ImGui::Begin("Imgui window");
-    //ImGuiIO& io = ImGui::GetIO();
-    //ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-
-    //ImGui::End();
-
     sceneHierarchy->Update(dt, scene);
     if (sceneHierarchy->selected)
     {
@@ -276,6 +278,7 @@ void Program::EndUpdate()
         ImGui::RenderPlatformWindowsDefault();
         glfwMakeContextCurrent(backup_current_context);
     }
+    scene->CleanUp();
     glfwSwapBuffers(window);
 }
 
@@ -284,32 +287,44 @@ void Program::End()
 
     SceneSerialiser serialiser(scene);
     serialiser.Serialise("scenes/");
-    OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    //OpenGLRenderer& renderer = OpenGLRenderer::GetSingleton();
+    ResourceManager& resources = ResourceManager::GetSingleton();
 
-    for (int i = 0; i < renderer.materials.size(); i++)
-    {
-        MaterialSerialiser m = MaterialSerialiser(renderer.materials[i]);
-        m.Serialise("base_materials/");
-    }
+    //for (int i = 0; i < renderer.materials.size(); i++)
+    //{
+    //    MaterialSerialiser m = MaterialSerialiser(renderer.materials[i]);
+    //    m.Serialise("base_materials/");
+    //}
 
-    for (int i = 0; i < renderer.materialInstances.size(); i++)
+    for (int i = 0; i < resources.materialInstances.size(); i++)
     {
-        MaterialInstanceSerialiser m = MaterialInstanceSerialiser(renderer.materialInstances[i]);
+        MaterialInstanceSerialiser m = MaterialInstanceSerialiser(resources.materialInstances[i]);
         m.Serialise("materials/");
     }
 
+    //for (auto& texture : renderer.textures)
+    //{
+    //    TextureSerialiser t = TextureSerialiser(texture);
+    //    t.Serialise("textures/");
+    //}
 
-    for (auto& texture : renderer.textures)
-    {
-        TextureSerialiser t = TextureSerialiser(texture);
-        t.Serialise("textures/");
-    }
-
-    for (auto& shader : renderer.shaders)
+    for (auto& shader : resources.shaders)
     {
         ShaderSerialiser s = ShaderSerialiser(shader);
         s.Serialise("shaders/");
     }
+
+    //for (auto& mesh : renderer.meshes)
+    //{
+    //    MeshSerialiser m = MeshSerialiser(mesh);
+    //    m.Serialise("meshes/");
+    //}
+
+    //for (auto& model : renderer.models)
+    //{
+    //    ModelSerialiser m = ModelSerialiser(model);
+    //    m.Serialise("models/");
+    //}
 
     glfwTerminate();
     // Cleanup GUI related
